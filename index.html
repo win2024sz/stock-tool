@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>A股决策助手</title>
+  <style>
+    body { font-family: Arial; background:#f5f5f5; text-align:center; }
+    .card { background:#fff; padding:20px; margin:50px auto; width:400px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+    input, select { width:90%; padding:10px; margin:10px 0; }
+    button { padding:10px 20px; background:#007bff; color:#fff; border:none; border-radius:5px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>A股决策助手</h2>
+
+  <input id="name" placeholder="股票名称">
+  <input id="change" placeholder="涨跌幅（如 +3%）">
+
+  <select id="ma20">
+    <option value="yes">站上20日线</option>
+    <option value="no">跌破20日线</option>
+  </select>
+
+  <select id="macd">
+    <option value="yes">MACD在0轴上</option>
+    <option value="no">MACD在0轴下</option>
+  </select>
+
+  <button onclick="gen()">生成策略</button>
+
+  <p id="result"></p>
+</div>
+
+<script>
+function gen(){
+  let name = document.getElementById('name').value;
+  let change = document.getElementById('change').value;
+  let ma20 = document.getElementById('ma20').value;
+  let macd = document.getElementById('macd').value;
+
+  let result = "";
+
+  if(ma20=="yes" && macd=="yes"){
+    result = name + "：趋势良好，可考虑持有或回调低吸";
+  }else if(ma20=="no"){
+    result = name + "：跌破20日线，建议控制仓位或止损";
+  }else{
+    result = name + "：走势一般，观望为主";
+  }
+
+  document.getElementById('result').innerText = result;
+}
+</script>
+
+</body>
+</html>
