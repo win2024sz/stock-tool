@@ -1,58 +1,982 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>A股决策助手</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做T成本收益计算器</title>
+  <meta name="theme-color" content="#17202a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="做T计算器">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="app-icon-180.png">
   <style>
-    body { font-family: Arial; background:#f5f5f5; text-align:center; }
-    .card { background:#fff; padding:20px; margin:50px auto; width:400px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
-    input, select { width:90%; padding:10px; margin:10px 0; }
-    button { padding:10px 20px; background:#007bff; color:#fff; border:none; border-radius:5px; }
+    :root {
+      --bg: #f5f7fb;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --panel: #ffffff;
+      --panel-soft: #eef3f8;
+      --red: #d33b3b;
+      --green: #15805f;
+      --blue: #1f63b7;
+      --amber: #b76a13;
+      --shadow: 0 14px 34px rgba(31, 44, 62, .10);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(31, 99, 183, .08), transparent 360px),
+        radial-gradient(circle at top left, rgba(21, 128, 95, .10), transparent 300px),
+        var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: 0;
+      line-height: 1.06;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      box-shadow: 0 1px 0 rgba(255,255,255,.6) inset;
+    }
+
+    .btn.primary {
+      border-color: #164f96;
+      background: #1f63b7;
+      color: #fff;
+    }
+
+    .btn.warn {
+      border-color: #f1c9c9;
+      color: #b02a2a;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    section, aside {
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid rgba(217, 224, 234, .9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .block {
+      padding: 18px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .stock-line {
+      display: grid;
+      grid-template-columns: 1fr 150px;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 7px;
+      min-height: 42px;
+      padding: 9px 11px;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #1f63b7;
+      box-shadow: 0 0 0 3px rgba(31, 99, 183, .12);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 8px 8px;
+    }
+
+    td {
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+
+    td:first-child, th:first-child { padding-left: 0; }
+    td:last-child, th:last-child { padding-right: 0; }
+
+    .row-action {
+      width: 42px;
+      text-align: right;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .switches {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .switches label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+    }
+
+    .switches input {
+      width: auto;
+      min-height: auto;
+    }
+
+    .result {
+      position: sticky;
+      top: 16px;
+      overflow: hidden;
+    }
+
+    .hero-result {
+      background: #17202a;
+      color: #fff;
+      padding: 18px;
+    }
+
+    .hero-result .muted { color: #b9c3d1; }
+
+    .price-input {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .price-input input {
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+    }
+
+    .price-input input::placeholder { color: rgba(255,255,255,.52); }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 14px;
+      background: var(--panel-soft);
+    }
+
+    .metric {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 86px;
+    }
+
+    .metric.wide { grid-column: 1 / -1; }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .profit { color: var(--red); }
+    .loss { color: var(--green); }
+    .neutral { color: var(--blue); }
+
+    .summary {
+      padding: 14px 18px 18px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .summary-grid b {
+      display: block;
+      color: var(--ink);
+      font-size: 16px;
+      margin-top: 2px;
+    }
+
+    .targets {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .target-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .target-pill {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .target-pill small {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .target-pill b {
+      display: block;
+      font-size: 15px;
+    }
+
+    .paste-box {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 8px 0 0;
+    }
+
+    .market-tool, .price-change-tool {
+      margin-top: 16px;
+      overflow: hidden;
+    }
+
+    .market-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 18px;
+      background: #203141;
+      color: #fff;
+    }
+
+    .market-head .lead { color: #c8d2df; }
+
+    .market-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, .78fr);
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .market-inputs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      align-content: start;
+    }
+
+    .market-results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .formula-line {
+      grid-column: 1 / -1;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 860px) {
+      header, .grid, .stock-line, .settings, .price-input, .market-head, .market-body, .market-inputs {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar { justify-content: flex-start; }
+      .result { position: static; }
+      .target-list { grid-template-columns: 1fr 1fr; }
+      .app { width: min(100% - 20px, 1180px); padding-top: 18px; }
+      th:nth-child(3), td:nth-child(3) { display: none; }
+    }
+
+    @media (max-width: 520px) {
+      .cards, .summary-grid, .target-list, .market-results { grid-template-columns: 1fr; }
+      .block, .hero-result, .summary { padding: 14px; }
+      h1 { font-size: 28px; }
+      td { padding: 5px 4px; }
+    }
   </style>
 </head>
 <body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>做T成本收益计算器</h1>
+        <p class="lead">分批买入后，自动算平均买入价、目标卖出价、差价、涨幅和粗略手续费。</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn" id="sampleBtn" type="button">填入示例</button>
+        <button class="btn warn" id="clearBtn" type="button">清空</button>
+      </div>
+    </header>
 
-<div class="card">
-  <h2>A股决策助手</h2>
+    <div class="grid">
+      <section class="block">
+        <div class="section-title">
+          <h2>买入明细</h2>
+          <button class="btn primary" id="addRowBtn" type="button">添加一笔</button>
+        </div>
 
-  <input id="name" placeholder="股票名称">
-  <input id="change" placeholder="涨跌幅（如 +3%）">
+        <div class="stock-line">
+          <div>
+            <label for="stockName">股票名称</label>
+            <input id="stockName" placeholder="例如：申菱环境" value="申菱环境">
+          </div>
+          <div>
+            <label for="marketType">市场</label>
+            <select id="marketType">
+              <option value="sz">深市/创业板</option>
+              <option value="sh">沪市</option>
+            </select>
+          </div>
+        </div>
 
-  <select id="ma20">
-    <option value="yes">站上20日线</option>
-    <option value="no">跌破20日线</option>
-  </select>
+        <table>
+          <thead>
+            <tr>
+              <th>买入价</th>
+              <th>股数</th>
+              <th>金额</th>
+              <th class="row-action">删除</th>
+            </tr>
+          </thead>
+          <tbody id="buyRows"></tbody>
+        </table>
 
-  <select id="macd">
-    <option value="yes">MACD在0轴上</option>
-    <option value="no">MACD在0轴下</option>
-  </select>
+        <div class="actions">
+          <button class="btn" id="roundLotsBtn" type="button">每行补成100股整数</button>
+          <button class="btn" id="copyBtn" type="button">复制结果</button>
+        </div>
 
-  <button onclick="gen()">生成策略</button>
+        <div class="settings">
+          <div>
+            <label for="commissionRate">佣金费率</label>
+            <input id="commissionRate" type="number" step="0.001" min="0" value="0.025">
+          </div>
+          <div>
+            <label for="minCommission">最低佣金</label>
+            <input id="minCommission" type="number" step="0.01" min="0" value="5">
+          </div>
+          <div>
+            <label for="stampTax">卖出印花税</label>
+            <input id="stampTax" type="number" step="0.001" min="0" value="0.05">
+          </div>
+          <div>
+            <label for="transferFee">沪市过户费</label>
+            <input id="transferFee" type="number" step="0.001" min="0" value="0.001">
+          </div>
+        </div>
 
-  <p id="result"></p>
-</div>
+        <div class="switches">
+          <label><input id="includeBuyFee" type="checkbox" checked> 净收益扣除买入佣金</label>
+          <label><input id="includeSellFee" type="checkbox" checked> 收益扣除卖出费用</label>
+        </div>
 
-<script>
-function gen(){
-  let name = document.getElementById('name').value;
-  let change = document.getElementById('change').value;
-  let ma20 = document.getElementById('ma20').value;
-  let macd = document.getElementById('macd').value;
+        <div class="paste-box">
+          <label for="quickPaste">快速粘贴买入记录</label>
+          <textarea id="quickPaste" placeholder="可粘贴：163.50*400，161.69*200，160.99*400"></textarea>
+          <div class="actions">
+            <button class="btn" id="parseBtn" type="button">识别并填入</button>
+          </div>
+          <p class="hint">支持 价格*股数、价格×股数、价格 股数 等格式。费用只是估算，请以券商交割单为准。</p>
+        </div>
+      </section>
 
-  let result = "";
+      <aside class="result">
+        <div class="hero-result">
+          <h2 id="resultTitle">申菱环境</h2>
+          <p class="lead muted">输入目标卖出价，立刻看这部分仓位的收益。</p>
+          <div class="price-input">
+            <div>
+              <label for="sellPrice">目标卖出价</label>
+              <input id="sellPrice" type="number" step="0.01" min="0" value="167">
+            </div>
+            <div>
+              <label for="sellShares">卖出股数</label>
+              <input id="sellShares" type="number" step="1" min="0" placeholder="默认全部">
+            </div>
+          </div>
+        </div>
 
-  if(ma20=="yes" && macd=="yes"){
-    result = name + "：趋势良好，可考虑持有或回调低吸";
-  }else if(ma20=="no"){
-    result = name + "：跌破20日线，建议控制仓位或止损";
-  }else{
-    result = name + "：走势一般，观望为主";
-  }
+        <div class="cards">
+          <div class="metric">
+            <span>平均买入价</span>
+            <strong id="avgCost">0.00</strong>
+          </div>
+          <div class="metric">
+            <span>总股数</span>
+            <strong id="totalShares">0</strong>
+          </div>
+          <div class="metric">
+            <span>每股差价</span>
+            <strong id="spread">0.00</strong>
+          </div>
+          <div class="metric">
+            <span>涨幅收益率</span>
+            <strong id="returnRate">0.00%</strong>
+          </div>
+          <div class="metric wide">
+            <span>预计净收益</span>
+            <strong id="netProfit">0.00</strong>
+          </div>
+        </div>
 
-  document.getElementById('result').innerText = result;
-}
-</script>
+        <div class="summary">
+          <h2>明细</h2>
+          <div class="summary-grid">
+            <div>投入本金<b id="principal">0.00</b></div>
+            <div>卖出收入<b id="sellAmount">0.00</b></div>
+            <div>账面毛利<b id="grossProfit">0.00</b></div>
+            <div>预估费用<b id="totalFee">0.00</b></div>
+          </div>
 
+          <div class="targets">
+            <h2>常看价位</h2>
+            <div class="target-list" id="targetList"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="market-tool">
+      <div class="market-head">
+        <div>
+          <h2>市值反推股价</h2>
+          <p class="lead">输入当前股价、当前总市值和目标总市值，快速估算目标股价和涨幅。</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="marketSampleBtn" type="button">填入申菱示例</button>
+          <button class="btn warn" id="marketClearBtn" type="button">清空</button>
+        </div>
+      </div>
+      <div class="market-body">
+        <div class="market-inputs">
+          <div>
+            <label for="currentPrice">当前股价</label>
+            <input id="currentPrice" type="number" step="0.01" min="0" value="167.29">
+          </div>
+          <div>
+            <label for="currentMarketCap">当前总市值（亿）</label>
+            <input id="currentMarketCap" type="number" step="0.01" min="0" value="447">
+          </div>
+          <div>
+            <label for="targetMarketCap">目标总市值（亿）</label>
+            <input id="targetMarketCap" type="number" step="0.01" min="0" value="500">
+          </div>
+          <p class="hint formula-line">计算逻辑：目标股价 = 当前股价 × 目标市值 ÷ 当前市值。这里只做静态估算，不考虑股本变化、增发、回购等情况。</p>
+        </div>
+        <div class="market-results">
+          <div class="metric">
+            <span>目标对应股价</span>
+            <strong id="targetPriceByCap">0.00</strong>
+          </div>
+          <div class="metric">
+            <span>上涨空间</span>
+            <strong id="capGainRate">0.00%</strong>
+          </div>
+          <div class="metric wide">
+            <span>每股增加</span>
+            <strong id="capPriceSpread">0.00</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="price-change-tool">
+      <div class="market-head">
+        <div>
+          <h2>股价涨跌幅计算</h2>
+          <p class="lead">输入起始股价和结束股价，自动判断上涨或下跌，并计算对应百分比。</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="changeSampleBtn" type="button">填入示例</button>
+          <button class="btn warn" id="changeClearBtn" type="button">清空</button>
+        </div>
+      </div>
+      <div class="market-body">
+        <div class="market-inputs">
+          <div>
+            <label for="startPrice">起始股价</label>
+            <input id="startPrice" type="number" step="0.01" min="0" value="133">
+          </div>
+          <div>
+            <label for="endPrice">结束股价</label>
+            <input id="endPrice" type="number" step="0.01" min="0" value="198">
+          </div>
+          <p class="hint formula-line">计算逻辑：涨跌幅 =（结束股价 - 起始股价）÷ 起始股价 × 100%。起始价为 0 时不计算。</p>
+        </div>
+        <div class="market-results">
+          <div class="metric">
+            <span id="changeTypeLabel">涨幅</span>
+            <strong id="priceChangeRate">0.00%</strong>
+          </div>
+          <div class="metric">
+            <span>每股变化</span>
+            <strong id="priceChangeAmount">0.00</strong>
+          </div>
+          <div class="metric wide">
+            <span>价格方向</span>
+            <strong id="priceChangeDirection">持平</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const stateKey = "stockTCalculatorStateV1";
+    const $ = (id) => document.getElementById(id);
+    const buyRows = $("buyRows");
+    const money = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const sharesFmt = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
+
+    const defaults = {
+      stockName: "申菱环境",
+      marketType: "sz",
+      sellPrice: 167,
+      sellShares: "",
+      commissionRate: 0.025,
+      minCommission: 5,
+      stampTax: 0.05,
+      transferFee: 0.001,
+      includeBuyFee: true,
+      includeSellFee: true,
+      rows: [
+        { price: 163.50, shares: 400 },
+        { price: 161.69, shares: 200 },
+        { price: 160.99, shares: 400 }
+      ]
+    };
+
+    let rows = [];
+
+    function num(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function percentToRate(value) {
+      return num(value) / 100;
+    }
+
+    function tradeFee(amount, isSell) {
+      const commissionRate = percentToRate($("commissionRate").value);
+      const minCommission = num($("minCommission").value);
+      const stampRate = percentToRate($("stampTax").value);
+      const transferRate = $("marketType").value === "sh" ? percentToRate($("transferFee").value) : 0;
+      const commission = amount > 0 && commissionRate > 0 ? Math.max(amount * commissionRate, minCommission) : 0;
+      const stamp = isSell ? amount * stampRate : 0;
+      const transfer = amount * transferRate;
+      return commission + stamp + transfer;
+    }
+
+    function rowAmount(row) {
+      return num(row.price) * num(row.shares);
+    }
+
+    function addRow(row = { price: "", shares: "" }) {
+      rows.push({ price: row.price, shares: row.shares });
+      renderRows();
+      calculate();
+    }
+
+    function renderRows() {
+      buyRows.innerHTML = "";
+      rows.forEach((row, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input aria-label="第${index + 1}笔买入价" inputmode="decimal" value="${row.price ?? ""}" data-field="price" data-index="${index}"></td>
+          <td><input aria-label="第${index + 1}笔股数" inputmode="numeric" value="${row.shares ?? ""}" data-field="shares" data-index="${index}"></td>
+          <td><strong data-amount="${index}">${money.format(rowAmount(row))}</strong></td>
+          <td class="row-action"><button class="icon-btn" title="删除这一笔" type="button" data-remove="${index}">×</button></td>
+        `;
+        buyRows.appendChild(tr);
+      });
+    }
+
+    function currentCalc(targetPrice = num($("sellPrice").value)) {
+      const totalShares = rows.reduce((sum, row) => sum + num(row.shares), 0);
+      const principal = rows.reduce((sum, row) => sum + rowAmount(row), 0);
+      const buyFee = $("includeBuyFee").checked ? tradeFee(principal, false) : 0;
+      const avgCost = totalShares > 0 ? principal / totalShares : 0;
+      const sellSharesInput = num($("sellShares").value);
+      const sellShares = sellSharesInput > 0 ? Math.min(sellSharesInput, totalShares) : totalShares;
+      const sellAmount = targetPrice * sellShares;
+      const holdingCost = avgCost * sellShares;
+      const sellFee = $("includeSellFee").checked ? tradeFee(sellAmount, true) : 0;
+      const grossProfit = sellAmount - holdingCost;
+      const netProfit = grossProfit - sellFee;
+      const spread = targetPrice - avgCost;
+      const returnRate = avgCost > 0 ? spread / avgCost : 0;
+      return { totalShares, principal, buyFee, avgCost, sellShares, sellAmount, sellFee, grossProfit, netProfit, spread, returnRate };
+    }
+
+    function paintProfit(el, value) {
+      el.classList.remove("profit", "loss", "neutral");
+      el.classList.add(value > 0 ? "profit" : value < 0 ? "loss" : "neutral");
+    }
+
+    function calculate() {
+      const calc = currentCalc();
+      $("resultTitle").textContent = $("stockName").value || "股票";
+      $("avgCost").textContent = money.format(calc.avgCost);
+      $("totalShares").textContent = sharesFmt.format(calc.totalShares);
+      $("spread").textContent = money.format(calc.spread);
+      $("returnRate").textContent = `${(calc.returnRate * 100).toFixed(2)}%`;
+      $("netProfit").textContent = money.format(calc.netProfit);
+      $("principal").textContent = money.format(calc.principal);
+      $("sellAmount").textContent = money.format(calc.sellAmount);
+      $("grossProfit").textContent = money.format(calc.grossProfit);
+      $("totalFee").textContent = money.format(calc.buyFee + calc.sellFee);
+      paintProfit($("spread"), calc.spread);
+      paintProfit($("returnRate"), calc.returnRate);
+      paintProfit($("netProfit"), calc.netProfit);
+      paintProfit($("grossProfit"), calc.grossProfit);
+      renderTargets(calc.avgCost);
+      save();
+    }
+
+    function renderTargets(avgCost) {
+      const base = num($("sellPrice").value) || avgCost;
+      const candidates = [...new Set([
+        Math.floor(avgCost),
+        Number((avgCost * 1.03).toFixed(2)),
+        base,
+        Number((avgCost * 1.08).toFixed(2))
+      ].filter((price) => price > 0))].slice(0, 4);
+      $("targetList").innerHTML = candidates.map((price) => {
+        const calc = currentCalc(price);
+        const className = calc.netProfit >= 0 ? "profit" : "loss";
+        return `
+          <button class="target-pill" type="button" data-target="${price}">
+            <small>${money.format(price)} 元卖出</small>
+            <b class="${className}">${money.format(calc.netProfit)}</b>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function save() {
+      const payload = collect();
+      localStorage.setItem(stateKey, JSON.stringify(payload));
+    }
+
+    function collect() {
+      return {
+        stockName: $("stockName").value,
+        marketType: $("marketType").value,
+        sellPrice: $("sellPrice").value,
+        sellShares: $("sellShares").value,
+        commissionRate: $("commissionRate").value,
+        minCommission: $("minCommission").value,
+        stampTax: $("stampTax").value,
+        transferFee: $("transferFee").value,
+        includeBuyFee: $("includeBuyFee").checked,
+        includeSellFee: $("includeSellFee").checked,
+        rows
+      };
+    }
+
+    function load(payload) {
+      $("stockName").value = payload.stockName ?? defaults.stockName;
+      $("marketType").value = payload.marketType ?? defaults.marketType;
+      $("sellPrice").value = payload.sellPrice ?? defaults.sellPrice;
+      $("sellShares").value = payload.sellShares ?? "";
+      $("commissionRate").value = payload.commissionRate ?? defaults.commissionRate;
+      $("minCommission").value = payload.minCommission ?? defaults.minCommission;
+      $("stampTax").value = payload.stampTax ?? defaults.stampTax;
+      $("transferFee").value = payload.transferFee ?? defaults.transferFee;
+      $("includeBuyFee").checked = payload.includeBuyFee ?? true;
+      $("includeSellFee").checked = payload.includeSellFee ?? true;
+      const savedRows = Array.isArray(payload.rows) && payload.rows.length ? payload.rows : structuredClone(defaults.rows);
+      rows = savedRows.map((row) => ({ ...row, shares: normalizeSavedShares(row.shares) }));
+      renderRows();
+      calculate();
+    }
+
+    function normalizeSavedShares(value) {
+      if (typeof value !== "string" || !/^0+\d+$/.test(value)) return value;
+      const leadingZeros = value.match(/^0+/)[0].length;
+      const digits = value.slice(leadingZeros);
+      return `${digits}${"0".repeat(leadingZeros)}`;
+    }
+
+    function parseRecords(text) {
+      const matches = [...text.matchAll(/(\d+(?:\.\d+)?)\s*(?:[*xX×乘]|[,，\s]+)\s*(\d+)/g)];
+      return matches.map((match) => ({ price: Number(match[1]), shares: Number(match[2]) }));
+    }
+
+    function copyResult() {
+      const calc = currentCalc();
+      const name = $("stockName").value || "股票";
+      const content = `${name}：总股数 ${calc.totalShares} 股，平均买入价 ${money.format(calc.avgCost)} 元/股。按 ${money.format(num($("sellPrice").value))} 元卖出 ${calc.sellShares} 股，每股差价 ${money.format(calc.spread)} 元，涨幅 ${(calc.returnRate * 100).toFixed(2)}%，账面毛利 ${money.format(calc.grossProfit)} 元，预估净收益 ${money.format(calc.netProfit)} 元。`;
+      navigator.clipboard?.writeText(content);
+      $("copyBtn").textContent = "已复制";
+      setTimeout(() => $("copyBtn").textContent = "复制结果", 1200);
+    }
+
+    function calculateMarketCap() {
+      const currentPrice = num($("currentPrice").value);
+      const currentCap = num($("currentMarketCap").value);
+      const targetCap = num($("targetMarketCap").value);
+      const targetPrice = currentCap > 0 ? currentPrice * targetCap / currentCap : 0;
+      const spread = targetPrice - currentPrice;
+      const gainRate = currentPrice > 0 ? spread / currentPrice : 0;
+      $("targetPriceByCap").textContent = money.format(targetPrice);
+      $("capGainRate").textContent = `${(gainRate * 100).toFixed(2)}%`;
+      $("capPriceSpread").textContent = money.format(spread);
+      paintProfit($("targetPriceByCap"), spread);
+      paintProfit($("capGainRate"), gainRate);
+      paintProfit($("capPriceSpread"), spread);
+    }
+
+    function calculatePriceChange() {
+      const startPrice = num($("startPrice").value);
+      const endPrice = num($("endPrice").value);
+      const spread = endPrice - startPrice;
+      const rate = startPrice > 0 ? spread / startPrice : 0;
+      const label = spread > 0 ? "涨幅" : spread < 0 ? "跌幅" : "涨跌幅";
+      const direction = spread > 0 ? "上涨" : spread < 0 ? "下跌" : "持平";
+      $("changeTypeLabel").textContent = label;
+      $("priceChangeRate").textContent = `${Math.abs(rate * 100).toFixed(2)}%`;
+      $("priceChangeAmount").textContent = money.format(spread);
+      $("priceChangeDirection").textContent = direction;
+      paintProfit($("priceChangeRate"), spread);
+      paintProfit($("priceChangeAmount"), spread);
+      paintProfit($("priceChangeDirection"), spread);
+    }
+
+    buyRows.addEventListener("input", (event) => {
+      const input = event.target;
+      if (!input.dataset.field) return;
+      const index = Number(input.dataset.index);
+      rows[index][input.dataset.field] = input.value;
+      const amountCell = buyRows.querySelector(`[data-amount="${index}"]`);
+      if (amountCell) amountCell.textContent = money.format(rowAmount(rows[index]));
+      calculate();
+    });
+
+    buyRows.addEventListener("click", (event) => {
+      const index = event.target.dataset.remove;
+      if (index === undefined) return;
+      rows.splice(Number(index), 1);
+      if (!rows.length) rows.push({ price: "", shares: "" });
+      renderRows();
+      calculate();
+    });
+
+    $("targetList").addEventListener("click", (event) => {
+      const pill = event.target.closest("[data-target]");
+      if (!pill) return;
+      $("sellPrice").value = pill.dataset.target;
+      calculate();
+    });
+
+    ["stockName", "marketType", "sellPrice", "sellShares", "commissionRate", "minCommission", "stampTax", "transferFee", "includeBuyFee", "includeSellFee"].forEach((id) => {
+      $(id).addEventListener("input", calculate);
+      $(id).addEventListener("change", calculate);
+    });
+
+    ["currentPrice", "currentMarketCap", "targetMarketCap"].forEach((id) => {
+      $(id).addEventListener("input", calculateMarketCap);
+      $(id).addEventListener("change", calculateMarketCap);
+    });
+
+    ["startPrice", "endPrice"].forEach((id) => {
+      $(id).addEventListener("input", calculatePriceChange);
+      $(id).addEventListener("change", calculatePriceChange);
+    });
+
+    $("addRowBtn").addEventListener("click", () => addRow());
+    $("clearBtn").addEventListener("click", () => load({ ...defaults, rows: [{ price: "", shares: "" }], stockName: "", sellPrice: "" }));
+    $("sampleBtn").addEventListener("click", () => load(defaults));
+    $("copyBtn").addEventListener("click", copyResult);
+    $("marketSampleBtn").addEventListener("click", () => {
+      $("currentPrice").value = "167.29";
+      $("currentMarketCap").value = "447";
+      $("targetMarketCap").value = "500";
+      calculateMarketCap();
+    });
+    $("marketClearBtn").addEventListener("click", () => {
+      $("currentPrice").value = "";
+      $("currentMarketCap").value = "";
+      $("targetMarketCap").value = "";
+      calculateMarketCap();
+      $("currentPrice").focus();
+    });
+    $("changeSampleBtn").addEventListener("click", () => {
+      $("startPrice").value = "133";
+      $("endPrice").value = "198";
+      calculatePriceChange();
+    });
+    $("changeClearBtn").addEventListener("click", () => {
+      $("startPrice").value = "";
+      $("endPrice").value = "";
+      calculatePriceChange();
+      $("startPrice").focus();
+    });
+    $("roundLotsBtn").addEventListener("click", () => {
+      rows = rows.map((row) => ({ ...row, shares: Math.round(num(row.shares) / 100) * 100 }));
+      renderRows();
+      calculate();
+    });
+    $("parseBtn").addEventListener("click", () => {
+      const parsed = parseRecords($("quickPaste").value);
+      if (parsed.length) {
+        rows = parsed;
+        renderRows();
+        calculate();
+      }
+    });
+
+    try {
+      load(JSON.parse(localStorage.getItem(stateKey)) || defaults);
+    } catch {
+      load(defaults);
+    }
+    calculateMarketCap();
+    calculatePriceChange();
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>
