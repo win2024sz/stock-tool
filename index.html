@@ -447,6 +447,90 @@
       </div>
     </header>
 
+    <section class="price-change-tool">
+      <div class="market-head">
+        <div>
+          <h2>股价涨跌幅计算</h2>
+          <p class="lead">输入起始股价和结束股价，自动判断上涨或下跌，并计算对应百分比。</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="changeSampleBtn" type="button">填入示例</button>
+          <button class="btn warn" id="changeClearBtn" type="button">清空</button>
+        </div>
+      </div>
+      <div class="market-body">
+        <div class="market-inputs">
+          <div>
+            <label for="startPrice">起始股价</label>
+            <input id="startPrice" type="number" step="0.01" min="0" placeholder="例如：133">
+          </div>
+          <div>
+            <label for="endPrice">结束股价</label>
+            <input id="endPrice" type="number" step="0.01" min="0" placeholder="例如：198">
+          </div>
+          <p class="hint formula-line">计算逻辑：涨跌幅 =（结束股价 - 起始股价）÷ 起始股价 × 100%。起始价为 0 时不计算。</p>
+        </div>
+        <div class="market-results">
+          <div class="metric">
+            <span id="changeTypeLabel">涨跌幅</span>
+            <strong id="priceChangeRate">0.00%</strong>
+          </div>
+          <div class="metric">
+            <span>每股变化</span>
+            <strong id="priceChangeAmount">0.00</strong>
+          </div>
+          <div class="metric wide">
+            <span>价格方向</span>
+            <strong id="priceChangeDirection">持平</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="market-tool">
+      <div class="market-head">
+        <div>
+          <h2>市值反推股价</h2>
+          <p class="lead">输入当前股价、当前总市值和目标总市值，快速估算目标股价和涨幅。</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="marketSampleBtn" type="button">填入申菱示例</button>
+          <button class="btn warn" id="marketClearBtn" type="button">清空</button>
+        </div>
+      </div>
+      <div class="market-body">
+        <div class="market-inputs">
+          <div>
+            <label for="currentPrice">当前股价</label>
+            <input id="currentPrice" type="number" step="0.01" min="0" placeholder="例如：167.29">
+          </div>
+          <div>
+            <label for="currentMarketCap">当前总市值（亿）</label>
+            <input id="currentMarketCap" type="number" step="0.01" min="0" placeholder="例如：447">
+          </div>
+          <div>
+            <label for="targetMarketCap">目标总市值（亿）</label>
+            <input id="targetMarketCap" type="number" step="0.01" min="0" placeholder="例如：500">
+          </div>
+          <p class="hint formula-line">计算逻辑：目标股价 = 当前股价 × 目标市值 ÷ 当前市值。这里只做静态估算，不考虑股本变化、增发、回购等情况。</p>
+        </div>
+        <div class="market-results">
+          <div class="metric">
+            <span>目标对应股价</span>
+            <strong id="targetPriceByCap">0.00</strong>
+          </div>
+          <div class="metric">
+            <span>上涨空间</span>
+            <strong id="capGainRate">0.00%</strong>
+          </div>
+          <div class="metric wide">
+            <span>每股增加</span>
+            <strong id="capPriceSpread">0.00</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="grid">
       <section class="block">
         <div class="section-title">
@@ -575,89 +659,6 @@
       </aside>
     </div>
 
-    <section class="market-tool">
-      <div class="market-head">
-        <div>
-          <h2>市值反推股价</h2>
-          <p class="lead">输入当前股价、当前总市值和目标总市值，快速估算目标股价和涨幅。</p>
-        </div>
-        <div class="toolbar">
-          <button class="btn" id="marketSampleBtn" type="button">填入申菱示例</button>
-          <button class="btn warn" id="marketClearBtn" type="button">清空</button>
-        </div>
-      </div>
-      <div class="market-body">
-        <div class="market-inputs">
-          <div>
-            <label for="currentPrice">当前股价</label>
-            <input id="currentPrice" type="number" step="0.01" min="0" value="167.29">
-          </div>
-          <div>
-            <label for="currentMarketCap">当前总市值（亿）</label>
-            <input id="currentMarketCap" type="number" step="0.01" min="0" value="447">
-          </div>
-          <div>
-            <label for="targetMarketCap">目标总市值（亿）</label>
-            <input id="targetMarketCap" type="number" step="0.01" min="0" value="500">
-          </div>
-          <p class="hint formula-line">计算逻辑：目标股价 = 当前股价 × 目标市值 ÷ 当前市值。这里只做静态估算，不考虑股本变化、增发、回购等情况。</p>
-        </div>
-        <div class="market-results">
-          <div class="metric">
-            <span>目标对应股价</span>
-            <strong id="targetPriceByCap">0.00</strong>
-          </div>
-          <div class="metric">
-            <span>上涨空间</span>
-            <strong id="capGainRate">0.00%</strong>
-          </div>
-          <div class="metric wide">
-            <span>每股增加</span>
-            <strong id="capPriceSpread">0.00</strong>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="price-change-tool">
-      <div class="market-head">
-        <div>
-          <h2>股价涨跌幅计算</h2>
-          <p class="lead">输入起始股价和结束股价，自动判断上涨或下跌，并计算对应百分比。</p>
-        </div>
-        <div class="toolbar">
-          <button class="btn" id="changeSampleBtn" type="button">填入示例</button>
-          <button class="btn warn" id="changeClearBtn" type="button">清空</button>
-        </div>
-      </div>
-      <div class="market-body">
-        <div class="market-inputs">
-          <div>
-            <label for="startPrice">起始股价</label>
-            <input id="startPrice" type="number" step="0.01" min="0" value="133">
-          </div>
-          <div>
-            <label for="endPrice">结束股价</label>
-            <input id="endPrice" type="number" step="0.01" min="0" value="198">
-          </div>
-          <p class="hint formula-line">计算逻辑：涨跌幅 =（结束股价 - 起始股价）÷ 起始股价 × 100%。起始价为 0 时不计算。</p>
-        </div>
-        <div class="market-results">
-          <div class="metric">
-            <span id="changeTypeLabel">涨幅</span>
-            <strong id="priceChangeRate">0.00%</strong>
-          </div>
-          <div class="metric">
-            <span>每股变化</span>
-            <strong id="priceChangeAmount">0.00</strong>
-          </div>
-          <div class="metric wide">
-            <span>价格方向</span>
-            <strong id="priceChangeDirection">持平</strong>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <script>
