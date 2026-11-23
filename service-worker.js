@@ -1,4 +1,4 @@
-const CACHE_NAME = "stock-calculator-v5";
+const CACHE_NAME = "stock-calculator-v6";
 const ASSETS = [
   "./",
   "./index.html",
