@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>股票指数计算器</title>
+  <title>股票投资计算器</title>
   <meta name="theme-color" content="#f2e9df">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="股票计算器">
@@ -232,6 +232,8 @@
       box-shadow: inset 3px 0 0 var(--accent);
     }
 
+    .recovery-results { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
     .result-label {
       display: block;
       margin-bottom: 5px;
@@ -256,6 +258,16 @@
       color: var(--muted);
       font-size: 13px;
       font-weight: 500;
+    }
+
+    .result-detail {
+      display: block;
+      min-height: 20px;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
     }
 
     .rise { color: var(--rise); }
@@ -290,6 +302,9 @@
 
       .input-grid.three > div:first-child { grid-column: 1 / -1; }
 
+      .recovery-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .recovery-results > .primary { grid-column: 1 / -1; }
+
       .result-value { font-size: 24px; }
     }
 
@@ -299,6 +314,8 @@
       .tool { padding: 14px; }
       .result-item { padding: 12px; }
       .result-value { font-size: 22px; }
+      .recovery-results { grid-template-columns: 1fr; }
+      .recovery-results > .primary { grid-column: auto; }
     }
   </style>
 </head>
@@ -306,7 +323,7 @@
   <main class="app">
     <header class="app-header">
       <span class="app-eyebrow">投资计算工具</span>
-      <h1>股票指数计算器</h1>
+      <h1>股票投资计算器</h1>
     </header>
 
     <section class="tool" aria-labelledby="stockChangeTitle">
@@ -342,35 +359,47 @@
       </div>
     </section>
 
-    <section class="tool" aria-labelledby="indexChangeTitle">
+    <section class="tool" aria-labelledby="recoveryTitle">
       <div class="tool-head">
-        <h2 id="indexChangeTitle">指数涨跌幅</h2>
-        <button class="clear-btn" type="button" data-clear="index">清空</button>
+        <h2 id="recoveryTitle">持仓回本计算</h2>
+        <button class="clear-btn" type="button" data-clear="recovery">清空</button>
       </div>
-      <div class="input-grid">
+      <div class="input-grid three">
         <div>
-          <label for="currentIndex">当前指数</label>
+          <label for="costPrice">持仓成本</label>
           <div class="input-wrap">
-            <input id="currentIndex" type="number" min="0" step="0.01" inputmode="decimal" placeholder="请输入" autocomplete="off">
-            <span class="unit">点</span>
+            <input id="costPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="请输入" autocomplete="off">
+            <span class="unit">元</span>
           </div>
         </div>
         <div>
-          <label for="targetIndex">目标指数</label>
+          <label for="holdingCurrentPrice">当前股价</label>
           <div class="input-wrap">
-            <input id="targetIndex" type="number" min="0" step="0.01" inputmode="decimal" placeholder="请输入" autocomplete="off">
-            <span class="unit">点</span>
+            <input id="holdingCurrentPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="请输入" autocomplete="off">
+            <span class="unit">元</span>
+          </div>
+        </div>
+        <div>
+          <label for="holdingShares">持股数量</label>
+          <div class="input-wrap">
+            <input id="holdingShares" type="number" min="0" step="1" inputmode="numeric" placeholder="请输入" autocomplete="off">
+            <span class="unit">股</span>
           </div>
         </div>
       </div>
-      <div class="result-grid" aria-live="polite">
+      <div class="result-grid recovery-results" aria-live="polite">
         <div class="result-item primary">
-          <span class="result-label" id="indexRateLabel">距离目标</span>
-          <strong class="result-value" id="indexRate">—</strong>
+          <span class="result-label">当前总资产</span>
+          <strong class="result-value" id="recoveryAssets">—</strong>
         </div>
         <div class="result-item">
-          <span class="result-label">相差点数</span>
-          <strong class="result-value" id="indexDifference">—</strong>
+          <span class="result-label" id="recoveryPnlLabel">当前盈亏</span>
+          <strong class="result-value" id="recoveryPnl">—</strong>
+          <span class="result-detail" id="recoveryPnlRate">—</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label" id="recoveryRateLabel">回本需上涨</span>
+          <strong class="result-value" id="recoveryRate">—</strong>
         </div>
       </div>
     </section>
@@ -426,7 +455,7 @@
     const groups = {
       stock: ["startPrice", "endPrice"],
       market: ["currentPrice", "currentMarketCap", "targetMarketCap"],
-      index: ["currentIndex", "targetIndex"]
+      recovery: ["costPrice", "holdingCurrentPrice", "holdingShares"]
     };
 
     function readNumber(id) {
@@ -485,26 +514,43 @@
       setTone($("marketRate"), difference);
     }
 
-    function calculateIndexChange() {
-      const current = readNumber("currentIndex");
-      const target = readNumber("targetIndex");
-      if (current === null || target === null || current <= 0) {
-        resetResult(["indexRate", "indexDifference"], { indexRateLabel: "距离目标" });
+    function calculateRecovery() {
+      const cost = readNumber("costPrice");
+      const current = readNumber("holdingCurrentPrice");
+      const shares = readNumber("holdingShares");
+      if (cost === null || current === null || shares === null || cost <= 0 || current <= 0 || shares <= 0) {
+        resetResult(
+          ["recoveryAssets", "recoveryPnl", "recoveryRate"],
+          { recoveryPnlLabel: "当前盈亏", recoveryRateLabel: "回本需上涨" }
+        );
+        $("recoveryPnlRate").textContent = "—";
+        $("recoveryPnlRate").classList.remove("rise", "fall", "neutral");
         return;
       }
 
-      const difference = target - current;
-      const rate = difference / current * 100;
-      $("indexRateLabel").textContent = difference > 0 ? "还需上涨" : difference < 0 ? "还需下跌" : "已到目标";
-      $("indexRate").textContent = `${Math.abs(rate).toFixed(2)}%`;
-      $("indexDifference").innerHTML = `${difference > 0 ? "+" : ""}${numberFormat.format(difference)} <small>点</small>`;
-      setTone($("indexRate"), difference);
-      setTone($("indexDifference"), difference);
+      const invested = cost * shares;
+      const currentAssets = current * shares;
+      const profitLoss = currentAssets - invested;
+      const profitLossRate = profitLoss / invested * 100;
+      const needsRecovery = current < cost;
+      const recoveryRate = needsRecovery ? (cost - current) / current * 100 : 0;
+
+      $("recoveryAssets").innerHTML = `${numberFormat.format(currentAssets)} <small>元</small>`;
+      $("recoveryPnlLabel").textContent = profitLoss > 0 ? "当前盈利" : profitLoss < 0 ? "当前亏损" : "当前盈亏";
+      $("recoveryPnl").innerHTML = `${numberFormat.format(Math.abs(profitLoss))} <small>元</small>`;
+      $("recoveryPnlRate").textContent = `${Math.abs(profitLossRate).toFixed(2)}%`;
+      $("recoveryRateLabel").textContent = needsRecovery ? "回本需上涨" : "已回本";
+      $("recoveryRate").textContent = `${recoveryRate.toFixed(2)}%`;
+
+      setTone($("recoveryAssets"), 0);
+      setTone($("recoveryPnl"), profitLoss);
+      setTone($("recoveryPnlRate"), profitLoss);
+      setTone($("recoveryRate"), needsRecovery ? 1 : 0);
     }
 
     groups.stock.forEach((id) => $(id).addEventListener("input", calculateStockChange));
     groups.market.forEach((id) => $(id).addEventListener("input", calculateMarketCap));
-    groups.index.forEach((id) => $(id).addEventListener("input", calculateIndexChange));
+    groups.recovery.forEach((id) => $(id).addEventListener("input", calculateRecovery));
 
     document.querySelectorAll("[data-clear]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -512,7 +558,7 @@
         groups[group].forEach((id) => { $(id).value = ""; });
         if (group === "stock") calculateStockChange();
         if (group === "market") calculateMarketCap();
-        if (group === "index") calculateIndexChange();
+        if (group === "recovery") calculateRecovery();
         $(groups[group][0]).focus();
       });
     });
